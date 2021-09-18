@@ -46,7 +46,7 @@ public class TcpClient {
                 Move move = new Move();
                 fromServer = Messaging.readBytes(in);
                 Gameboard gameboard = gson.fromJson(fromServer, Gameboard.class);
-                String winner = isWinner(gameboard);
+                String winner = getWinner(gameboard);
                 if (winner.equalsIgnoreCase("1")) {
                     System.out.println("Победил игрок 1");
                     break;
@@ -72,6 +72,7 @@ public class TcpClient {
                             input = scanner.nextLine();
                         }
                         if (input.equalsIgnoreCase("y")) {
+                            //TODO проверка на финал игры
                             System.out.println("Введите какую карту хотите положить");
                             move.setBelieve(true);
                             //TODO проверить есть ли в наличии у пользователя карты
@@ -160,7 +161,7 @@ public class TcpClient {
         return isEmpty;
     }
 
-    public static String isWinner(Gameboard gameboard) {
+    public static String getWinner(Gameboard gameboard) {
         boolean isPlayerFirstWin = true;
         boolean isPlayerSecondWin = true;
         for (Integer number : gameboard.getPlayerFirstCards().values()) {
@@ -169,7 +170,7 @@ public class TcpClient {
                 break;
             }
         }
-        for (Integer number : gameboard.getPlayerFirstCards().values()) {
+        for (Integer number : gameboard.getPlayerSecondCards().values()) {
             if (number > 0) {
                 isPlayerSecondWin = false;
                 break;
