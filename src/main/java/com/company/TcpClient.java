@@ -57,12 +57,7 @@ public class TcpClient {
                 player.setCardsFromBoard(gameboard);
                 boardInfo(gameboard, player);
 
-//                gameboard.getCards().forEach((key, value) -> {
-//                    System.out.println(" - :" + key + " " + value);
-//                });
-                //TODO будущая проверка на то какой пользователь продолжает игру
                 if (gameboard.getCurPlayer().equalsIgnoreCase(player.getName())) {
-                    //TODO проверка пуст ли стол чтобы не было выбора
                     if (!isEmptyBoard(gameboard)) {
                         System.out.println("Верите ли вы второму игроку");
                         System.out.println("Введите Y/N");
@@ -72,10 +67,8 @@ public class TcpClient {
                             input = scanner.nextLine();
                         }
                         if (input.equalsIgnoreCase("y")) {
-                            //TODO проверка на финал игры
                             System.out.println("Введите какую карту хотите положить");
                             move.setBelieve(true);
-                            //TODO проверить есть ли в наличии у пользователя карты
                             card = readType();
                             while (!player.isPossibleToDecrease(card)) {
                                 System.out.println("У вас нет карт этой масти! Введите другую");
@@ -87,11 +80,9 @@ public class TcpClient {
                             //все вычисление делаем на сервере в этом случае
                             move.setBelieve(false);
                             move.setCard(gameboard.getLastCard());
-//                            move.setToldCard(gameboard.getBoardCard());
                         }
                     } else {
                         move = emptyBoardMove(player);
-//                        move.setToldCard(gameboard.getBoardCard());
                     }
                     //отправка результата хода на сервер
 //                    System.out.println(gson.toJson(move));
@@ -123,27 +114,21 @@ public class TcpClient {
         player.getCards().forEach((key, value) -> {
             System.out.println("масть " + key + " количество  " + value);
         });
-        if (gameboard.getBoardCard() != null)
+        if (gameboard.getBoardCard() != null && !isEmptyBoard(gameboard))
             System.out.println("Масть карты на столе : " + gameboard.getBoardCard());
-//        System.out.println("КАРТЫ НА СТОЛЕ");
-//        gameboard.getCards().forEach((key, value) -> {
-//            System.out.println("масть " + key + " количество  " + value);
-//        });
+
     }
 
     public static Move emptyBoardMove(Player player) {
         Move move = new Move();
         System.out.println("Введите какую карту хотите положить");
         move.setBelieve(true);
-        //TODO проверить есть ли в наличии у пользователя карты
         String card = readType();
         while (!player.isPossibleToDecrease(card)) {
             System.out.println("У вас нет карт этой масти! Введите другую");
             card = readType();
         }
         move.setCard(card);
-        //TODO проверки на корректный ввод
-        //TODO сделать конфиг или класс для мастей, чтобы не хардкодить проверки
         System.out.println("Какую карту называете");
         String toldCard = readType();
         move.setToldCard(toldCard);
@@ -162,24 +147,29 @@ public class TcpClient {
     }
 
     public static String getWinner(Gameboard gameboard) {
-        boolean isPlayerFirstWin = true;
-        boolean isPlayerSecondWin = true;
-        for (Integer number : gameboard.getPlayerFirstCards().values()) {
-            if (number > 0) {
-                isPlayerFirstWin = false;
-                break;
+        try {
+            boolean isPlayerFirstWin = true;
+            boolean isPlayerSecondWin = true;
+            for (Integer number : gameboard.getPlayerFirstCards().values()) {
+                if (number > 0) {
+                    isPlayerFirstWin = false;
+                    break;
+                }
             }
-        }
-        for (Integer number : gameboard.getPlayerSecondCards().values()) {
-            if (number > 0) {
-                isPlayerSecondWin = false;
-                break;
+            for (Integer number : gameboard.getPlayerSecondCards().values()) {
+                if (number > 0) {
+                    isPlayerSecondWin = false;
+                    break;
+                }
             }
+            if (isPlayerFirstWin)
+                return "1";
+            else if (isPlayerSecondWin)
+                return "2";
+            else return "0";
+        } catch (NullPointerException e) {
+            System.out.println("ОШИБКА ПРИ ЗАГРУЗКЕ ДАННЫХ С СЕРВЕРА");
         }
-        if (isPlayerFirstWin)
-            return "1";
-        else if (isPlayerSecondWin)
-            return "2";
-        else return "0";
+        return "-1";
     }
 }
