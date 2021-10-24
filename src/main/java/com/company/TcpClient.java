@@ -1,5 +1,6 @@
 package com.company;
 
+import com.company.messages.GameMsg;
 import com.company.messages.Gameboard;
 import com.company.messages.Move;
 import com.company.messages.Position;
@@ -10,6 +11,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
 
@@ -19,7 +21,7 @@ public class TcpClient {
     private static final int DEFAULT_PORT = 11122;
     private static Scanner scanner = new Scanner(System.in);
 
-    private static final List<String> types = List.of("1", "2", "3");
+    private static final List<String> STRENGTHS = List.of("1", "2", "3", "4", "5", "6", "7", "8");
 
     public static void main(String[] args) {
         //Определяем хост сервера и порт
@@ -29,7 +31,7 @@ public class TcpClient {
             //Создаем сокет для полученной пары хост/порт
             Socket socket = new Socket(host, port);
             System.out.println(socket.toString());
-            System.out.println("CONNECTED TO SERVER.\n");
+            System.out.println("Присоединились к серверу \n");
             Player player = new Player(String.valueOf(socket.getPort()));
             // получаем потоки для чтения и записи в сокет
             OutputStream out = socket.getOutputStream();
@@ -37,6 +39,7 @@ public class TcpClient {
             Gson gson = new Gson();
 
             String fromServer = Messaging.readBytes(in);
+            //получаем порядковый номер хода
             Position name = gson.fromJson(fromServer, Position.class);
             System.out.println(name.getPosition());
             player.setName(name.getPosition());
@@ -45,20 +48,21 @@ public class TcpClient {
             while (!socket.isClosed()) {
                 Move move = new Move();
                 fromServer = Messaging.readBytes(in);
-                Gameboard gameboard = gson.fromJson(fromServer, Gameboard.class);
-                String winner = getWinner(gameboard);
+                GameMsg gameMsg = gson.fromJson(fromServer, GameMsg.class);
+                String winner = getWinner(gameMsg);
                 if (winner.equalsIgnoreCase("1")) {
                     System.out.println("Победил игрок 1");
                     break;
                 } else if (winner.equalsIgnoreCase("2")) {
                     System.out.println("Победил игрок 2");
                     break;
-                }
-                player.setCardsFromBoard(gameboard);
-                boardInfo(gameboard, player);
+                } else if (winner.equalsIgnoreCase("3"))
+                    System.out.println("Ничья");
+                player.setStrengthFromGame(gameMsg);
+                logInfo(gameMsg, player);
 
-                if (gameboard.getCurPlayer().equalsIgnoreCase(player.getName())) {
-                    if (!isEmptyBoard(gameboard)) {
+                if (gameMsg.getCurPlayer().equalsIgnoreCase(player.getName())) {
+                    if (!isEmptyBoard(gameMsg)) {
                         System.out.println("Верите ли вы второму игроку");
                         System.out.println("Введите Y/N");
                         String input = scanner.nextLine();
@@ -79,7 +83,7 @@ public class TcpClient {
                         } else {
                             //все вычисление делаем на сервере в этом случае
                             move.setBelieve(false);
-                            move.setCard(gameboard.getLastCard());
+                            move.setCard(gameMsg.getLastCard());
                         }
                     } else {
                         move = emptyBoardMove(player);
@@ -100,76 +104,48 @@ public class TcpClient {
         }
     }
 
-    public static String readType() {
-        String card = scanner.nextLine();
-        while (!types.contains(card)) {
-            System.out.println("Введите правильный тип карты");
-            card = scanner.nextLine();
+    public static String readType(Player player) {
+        String strength = scanner.nextLine();
+        HashSet<String> strengthSet = new HashSet<String>(STRENGTHS);
+
+        strengthSet.removeAll()
+        while (!STRENGTHS.contains(strength)) {
+            strengthSet.remove(strength);
+            System.out.println("Введите число от 1 до 8");
+            strength = scanner.nextLine();
         }
-        return card;
+        return strength;
     }
 
-    public static void boardInfo(Gameboard gameboard, Player player) {
-        System.out.println("ВАШИ КАРТЫ: ");
-        player.getCards().forEach((key, value) -> {
-            System.out.println("масть " + key + " количество  " + value);
-        });
-        if (gameboard.getBoardCard() != null && !isEmptyBoard(gameboard))
-            System.out.println("Масть карты на столе : " + gameboard.getBoardCard());
+    public static void logInfo(GameMsg gameMsg, Player player) {
+        System.out.println("ВАШИ СИЛЫ: ");
+        for (char i : player.getStrength().toCharArray())
+            System.out.println("( •_•)⠀\n" +
+                    "( ง )ง +" + player.getStrength().charAt(i) + "\n" +
+                    "/︶\\");
+
 
     }
 
-    public static Move emptyBoardMove(Player player) {
-        Move move = new Move();
-        System.out.println("Введите какую карту хотите положить");
-        move.setBelieve(true);
-        String card = readType();
-        while (!player.isPossibleToDecrease(card)) {
-            System.out.println("У вас нет карт этой масти! Введите другую");
-            card = readType();
-        }
-        move.setCard(card);
-        System.out.println("Какую карту называете");
-        String toldCard = readType();
-        move.setToldCard(toldCard);
-        return move;
-    }
 
-    public static boolean isEmptyBoard(Gameboard gameboard) {
-        boolean isEmpty = true;
-        for (Integer number : gameboard.getCards().values()) {
-            if (number > 0) {
-                isEmpty = false;
-                break;
+    public static String getWinner(GameMsg gameMsg) {
+        int playerFirstPoints = 0;
+        int playerSecondPoints = 0;
+        if (gameMsg.getPlayerFirst().length() == 8 && gameMsg.getPlayerSecond().length() == 8) {
+            for (char i : gameMsg.getPlayerFirst().toCharArray()) {
+                int playerFirstStrength = gameMsg.getPlayerFirst().charAt(i);
+                int playerSecondStrength = gameMsg.getPlayerSecond().charAt(i);
+                if (playerFirstStrength > playerSecondStrength)
+                    playerFirstPoints += 1;
+                else if (playerFirstStrength < playerSecondStrength)
+                    playerSecondPoints += 1;
             }
-        }
-        return isEmpty;
-    }
-
-    public static String getWinner(Gameboard gameboard) {
-        try {
-            boolean isPlayerFirstWin = true;
-            boolean isPlayerSecondWin = true;
-            for (Integer number : gameboard.getPlayerFirstCards().values()) {
-                if (number > 0) {
-                    isPlayerFirstWin = false;
-                    break;
-                }
-            }
-            for (Integer number : gameboard.getPlayerSecondCards().values()) {
-                if (number > 0) {
-                    isPlayerSecondWin = false;
-                    break;
-                }
-            }
-            if (isPlayerFirstWin)
+            if (playerFirstPoints > playerSecondPoints)
                 return "1";
-            else if (isPlayerSecondWin)
+            else if (playerFirstPoints < playerSecondPoints)
                 return "2";
-            else return "0";
-        } catch (NullPointerException e) {
-            System.out.println("ОШИБКА ПРИ ЗАГРУЗКЕ ДАННЫХ С СЕРВЕРА");
-        }
-        return "-1";
+            else return "3";
+        } else
+            return "0";
     }
 }

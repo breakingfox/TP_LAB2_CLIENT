@@ -1,34 +1,16 @@
 package com.company.messages;
 
-//класс для джейсона в котором описывается как сходил игрок
 public class Move {
 
-    private boolean isBelieve;
-    private String card;
-    private String toldCard;
+    private String strength;
 
-    public String getToldCard() {
-        return toldCard;
+    public String getStrength() {
+        return strength;
     }
 
-    public void setToldCard(String toldCard) {
-        this.toldCard = toldCard;
-    }
-
-    public boolean isBelieve() {
-        return isBelieve;
-    }
-
-    public void setBelieve(boolean believe) {
-        isBelieve = believe;
-    }
-
-    public String getCard() {
-        return card;
-    }
-
-    public void setCard(String card) {
-        this.card = card;
+    public void setStrength(String strength) {
+        this.strength = strength;
     }
 
 }
+

@@ -1,7 +1,6 @@
 package com.company.messages;
 
 public class Position {
-
     private String position;
 
     public Position(String position) {
@@ -15,5 +14,4 @@ public class Position {
     public void setPosition(String position) {
         this.position = position;
     }
-
 }

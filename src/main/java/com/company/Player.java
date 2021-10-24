@@ -1,34 +1,24 @@
 package com.company;
 
-import com.company.messages.Gameboard;
+import com.company.messages.GameMsg;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
 
 public class Player {
     private String name;
-    private Map<String, Integer> cards;
+
+
+    private HashSet<String> strength;
 
     public Player(String name) {
         this.name = name;
-        cards = new HashMap<>();
-        cards.put("1", 3);
-        cards.put("2", 2);
-        cards.put("3", 1);
+        this.strength = new HashSet<>();
     }
 
-    public void setCardsFromBoard(Gameboard gameboard) {
-        if (name.equalsIgnoreCase("1"))
-            cards = gameboard.getPlayerFirstCards();
-        else
-            cards = gameboard.getPlayerSecondCards();
-    }
-
-    /**
-     * проверка может ли пользователь выложить свою карту
-     */
-    public boolean isPossibleToDecrease(String type) {
-        return cards.get(type) - 1 >= 0;
+    public void setStrengthFromGame(GameMsg game) {
+        gameStrngth = game.getPlayerFirst()
+        for (char x:game.)
+        game.getPlayerSecond()
     }
 
     public String getName() {
@@ -39,11 +29,11 @@ public class Player {
         this.name = name;
     }
 
-    public Map<String, Integer> getCards() {
-        return cards;
+    public HashSet<String> getStrength() {
+        return strength;
     }
 
-    public void setCards(Map<String, Integer> cards) {
-        this.cards = cards;
+    public void setStrength(HashSet<String> strength) {
+        this.strength = strength;
     }
 }
