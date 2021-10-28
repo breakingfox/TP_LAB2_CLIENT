@@ -9,12 +9,12 @@ public class Messaging {
             BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
             int length = reader.read();
 
-            String string = "";
+            StringBuilder string = new StringBuilder();
             for (int i = 0; i < length; ++i) {
-                string += (char) reader.read();
+                string.append((char) reader.read());
             }
 
-            return string;
+            return string.toString();
         } catch (IOException ex) {
             System.out.println("I/O Error!");
         }

@@ -1,7 +1,6 @@
 package com.company;
 
 import com.company.messages.GameMsg;
-import com.company.messages.Gameboard;
 import com.company.messages.Move;
 import com.company.messages.Position;
 import com.google.gson.Gson;
@@ -49,7 +48,7 @@ public class TcpClient {
                 Move move = new Move();
                 fromServer = Messaging.readBytes(in);
                 GameMsg gameMsg = gson.fromJson(fromServer, GameMsg.class);
-                String winner = getWinner(gameMsg);
+                String winner = getWinner(gameMsg, player);
                 if (winner.equalsIgnoreCase("1")) {
                     System.out.println("Победил игрок 1");
                     break;
@@ -61,33 +60,10 @@ public class TcpClient {
                 player.setStrengthFromGame(gameMsg);
                 logInfo(gameMsg, player);
 
-                if (gameMsg.getCurPlayer().equalsIgnoreCase(player.getName())) {
-                    if (!isEmptyBoard(gameMsg)) {
-                        System.out.println("Верите ли вы второму игроку");
-                        System.out.println("Введите Y/N");
-                        String input = scanner.nextLine();
-                        while (!(input.equalsIgnoreCase("y") || input.equalsIgnoreCase("n"))) {
-                            System.out.println("Введите Y/N");
-                            input = scanner.nextLine();
-                        }
-                        if (input.equalsIgnoreCase("y")) {
-                            System.out.println("Введите какую карту хотите положить");
-                            move.setBelieve(true);
-                            card = readType();
-                            while (!player.isPossibleToDecrease(card)) {
-                                System.out.println("У вас нет карт этой масти! Введите другую");
-                                card = readType();
-                            }
-                            move.setCard(card);
 
-                        } else {
-                            //все вычисление делаем на сервере в этом случае
-                            move.setBelieve(false);
-                            move.setCard(gameMsg.getLastCard());
-                        }
-                    } else {
-                        move = emptyBoardMove(player);
-                    }
+                if (gameMsg.getCurPlayer().equalsIgnoreCase(player.getName())) {
+                    move.setStrength(readType(player));
+
                     //отправка результата хода на сервер
 //                    System.out.println(gson.toJson(move));
                     Messaging.writeBytes(out, gson.toJson(move));
@@ -105,13 +81,13 @@ public class TcpClient {
     }
 
     public static String readType(Player player) {
+        System.out.println("Введите число от 1 до 8, которое вы не вводили до этого");
         String strength = scanner.nextLine();
-        HashSet<String> strengthSet = new HashSet<String>(STRENGTHS);
-
-        strengthSet.removeAll()
-        while (!STRENGTHS.contains(strength)) {
-            strengthSet.remove(strength);
-            System.out.println("Введите число от 1 до 8");
+        HashSet<String> strengthSet = new HashSet<>();
+        for (Character i : player.getStrength().toCharArray())
+            strengthSet.add(String.valueOf(i));
+        while (!STRENGTHS.contains(strength) || strengthSet.contains(strength)) {
+            System.out.println("Введите число от 1 до 8, которое вы не вводили до этого");
             strength = scanner.nextLine();
         }
         return strength;
@@ -119,26 +95,31 @@ public class TcpClient {
 
     public static void logInfo(GameMsg gameMsg, Player player) {
         System.out.println("ВАШИ СИЛЫ: ");
-        for (char i : player.getStrength().toCharArray())
-            System.out.println("( •_•)⠀\n" +
-                    "( ง )ง +" + player.getStrength().charAt(i) + "\n" +
-                    "/︶\\");
+        for (int i = 0; i < player.getStrength().length(); i++)
+            System.out.println("   ( •_•)⠀\n" +
+                    +Character.getNumericValue(player.getStrength().charAt(i)) + "  ( ง )ง\n" +
+                    "   /︶\\");
 
 
     }
 
 
-    public static String getWinner(GameMsg gameMsg) {
+    public static String getWinner(GameMsg gameMsg, Player player) {
         int playerFirstPoints = 0;
         int playerSecondPoints = 0;
         if (gameMsg.getPlayerFirst().length() == 8 && gameMsg.getPlayerSecond().length() == 8) {
-            for (char i : gameMsg.getPlayerFirst().toCharArray()) {
+            for (int i = 0; i < 8; i++) {
                 int playerFirstStrength = gameMsg.getPlayerFirst().charAt(i);
                 int playerSecondStrength = gameMsg.getPlayerSecond().charAt(i);
                 if (playerFirstStrength > playerSecondStrength)
                     playerFirstPoints += 1;
                 else if (playerFirstStrength < playerSecondStrength)
                     playerSecondPoints += 1;
+            }
+            if (player.getName().equalsIgnoreCase("1")) {
+                drawBattle(gameMsg.getPlayerFirst(), gameMsg.getPlayerSecond());
+            } else {
+                drawBattle(gameMsg.getPlayerSecond(), gameMsg.getPlayerFirst());
             }
             if (playerFirstPoints > playerSecondPoints)
                 return "1";
@@ -147,5 +128,13 @@ public class TcpClient {
             else return "3";
         } else
             return "0";
+    }
+
+    public static void drawBattle(String leftPlayer, String rightPlayer) {
+        for (int i = 0; i < 8; i++) {
+            System.out.println("     ( •_•)     (•_• )     \n" +
+                    leftPlayer.charAt(i) + "    ( ง )ง     ୧( ୧ )     " + rightPlayer.charAt(i) +"\n"+
+                    "     /︶\\        /︶\\     ");
+        }
     }
 }
